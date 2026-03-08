@@ -1,0 +1,8 @@
+[package]
+name = "test_server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+network_handler = {path = "../network_handler"}
+addresses = { path = "../../utils/addresses"}

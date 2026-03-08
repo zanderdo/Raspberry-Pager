@@ -1,23 +1,19 @@
-mod cmds;
+pub mod cmds;
 use clap::{Parser};
 use std::io;
+use addresses::addresses::{TEST_SERVER_ADDR};
+use std::net::{TcpStream};
 
 
 
 #[repr(u8)]
 enum CliOptions {
-    DisplayOptions = 0,
-    CreateAndDisplayPacket = 1,
+    Quit = 0,
+    DisplayOptions = 1,
+    CreateAndDisplayPacket = 2,
+    ConnectToTestServer = 3,
 }
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-
-    #[arg(short, long)]
-    command: u8
-
-}
 
 fn get_update_screen_string_from_user() -> [u8; cmds::MAX_PAYLOAD_LEN] {
     println!("Enter the string to update the screen with. Max # of characters: {}", cmds::MAX_PAYLOAD_LEN);
@@ -49,20 +45,41 @@ fn create_and_display_packet() {
 }
 
 fn display_options() {
-    println!("(0) - DisplayOptions");
-    println!("(1) - CreateAndDisplayPacket");
+    println!("(0) - Quit");
+    println!("(1) - DisplayOptions");
+    println!("(2) - CreateAndDisplayPacket");
+    println!("(3) - ConnectToTestServer");
+}
+
+fn prompt_user_for_menu_choice() -> u8 {
+    println!("Enter CliOption to execute:");
+    display_options();
+    let mut option_string = String::new();
+    io::stdin().read_line(&mut option_string).expect("Could not read line from command line");
+    option_string.trim().parse().expect("Input not a valid u8 number")
+}
+
+fn connect_to_test_server() -> io::Result<TcpStream> {
+    TcpStream::connect(TEST_SERVER_ADDR)
 }
 
 fn main() {
 
     println!("Network handler CLI, select option to continue:");
-    display_options();
 
-    let args = Args::parse();
-
-    match args.command {
-        val if val == CliOptions::DisplayOptions as u8 => display_options(),
-        val if val == CliOptions::CreateAndDisplayPacket as u8 => create_and_display_packet(),
-        _ => println!("Unrecognized CLI option {}!", args.command)
+    loop {
+        let user_choice: u8 = prompt_user_for_menu_choice();
+        match user_choice {
+            val if val == CliOptions::Quit as u8 => break,
+            val if val == CliOptions::DisplayOptions as u8 => display_options(),
+            val if val == CliOptions::CreateAndDisplayPacket as u8 => create_and_display_packet(),
+            val if val == CliOptions::ConnectToTestServer as u8 => {
+                match connect_to_test_server() {
+                    Ok((stream)) => println!("Successfully connected to test server"),
+                    Err(e) => println!("Error connecting to test server: {e:?}"),
+                }
+            },
+            _ => println!("Unrecognized CLI option {}!", user_choice)
+        }
     }
 }
